@@ -18,17 +18,21 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(name="users")
+@Table(name = "users")
 public class User {
 	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 	@Column
 	private String username;
 	@Column
-	
-	private String profileImg;
+	private String profileImage;
 	@Column
 	private boolean alarm;
-	
+	@Column
+	private String provider;
+	@Column
+	private String accessToken;
+	@Column
+	private String refreshToken;
+
 }

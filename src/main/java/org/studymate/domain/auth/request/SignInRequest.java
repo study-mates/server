@@ -1,4 +1,4 @@
-package org.studymate.domain.auth.dto;
+package org.studymate.domain.auth.request;
 
 import lombok.Data;
 
