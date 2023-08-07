@@ -8,7 +8,7 @@ import org.studymate.domain.auth.dto.KakaoUser;
 import org.studymate.domain.auth.request.SignUpRequest;
 import org.studymate.domain.user.entity.User;
 import org.studymate.domain.user.entity.UserRepository;
-import org.studymate.global.exception.type.BadRequestException;
+import org.studymate.global.exception.BadRequestException;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;

@@ -11,8 +11,8 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 import org.studymate.domain.auth.dto.KakaoUser;
-import org.studymate.global.exception.type.BadRequestException;
-import org.studymate.global.exception.type.InternalServerError;
+import org.studymate.global.exception.BadRequestException;
+import org.studymate.global.exception.InternalServerErrorException;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -88,7 +88,7 @@ public class AuthService {
 			return new KakaoUser(id, username, profileImage, false, accessToken);
 		} catch (Exception e) {
 			log.debug("exception {}", e.getMessage());
-			throw new InternalServerError(e.getMessage());
+			throw new InternalServerErrorException(e.getMessage());
 		}
 	}
 
