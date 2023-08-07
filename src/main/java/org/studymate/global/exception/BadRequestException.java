@@ -1,4 +1,4 @@
-package org.studymate.global.exception.type;
+package org.studymate.global.exception;
 
 public class BadRequestException extends RuntimeException {
 

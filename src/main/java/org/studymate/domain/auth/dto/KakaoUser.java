@@ -20,4 +20,6 @@ public class KakaoUser {
 	@JsonIgnore
 	private String accessToken;
 
+	@JsonIgnore
+	private boolean isNew;
 }

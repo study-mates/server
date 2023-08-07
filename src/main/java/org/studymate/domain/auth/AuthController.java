@@ -24,7 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 @RestController
 @RequiredArgsConstructor
 @Slf4j
-@RequestMapping("api/v1/auth")
+@RequestMapping("/api/v1/auth")
 public class AuthController {
 
 	private final JwtProvieder jwtProvider;
@@ -60,10 +60,10 @@ public class AuthController {
 		log.debug("kakao code = {}", code);
 		String accessToken = authService.exchangeKakaoCodeToToken(code);
 		KakaoUser kakaoUser = authService.exchangeAccessTokenToKakaoUser(accessToken);
-		User user = userService.addKakaoAuthedOne(kakaoUser);
 
+		User user = userService.addKakaoAuthedOne(kakaoUser);
 		String token = jwtProvider.createToken(user);
 
-		return new ResponseEntity<>(AuthResponse.builder().token(token).user(kakaoUser).build(), HttpStatus.OK);
+		return new ResponseEntity<>(AuthResponse.builder().token(token).user(kakaoUser).isNew(kakaoUser.isNew()).build(), HttpStatus.OK);
 	}
 }
