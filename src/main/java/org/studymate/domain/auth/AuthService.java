@@ -85,7 +85,7 @@ public class AuthService {
 			String username = node.get("kakao_account").get("profile").get("nickname").asText();
 			String profileImage = node.get("kakao_account").get("profile").get("profile_image_url").asText();
 
-			return new KakaoUser(id, username, profileImage, false, accessToken);
+			return new KakaoUser(id, username, profileImage, false, accessToken, false);
 		} catch (Exception e) {
 			log.debug("exception {}", e.getMessage());
 			throw new InternalServerErrorException(e.getMessage());

@@ -41,6 +41,7 @@ public class UserService {
 	public User addKakaoAuthedOne(KakaoUser user) {
 		Optional<User> found = userRepository.findById(user.getId());
 		if (found.isPresent()) {
+			user.setNew(false);
 			User existed = found.get();
 			existed.setAccessToken(user.getAccessToken());
 			existed.setProfileImage(user.getProfileImage());
@@ -50,6 +51,7 @@ public class UserService {
 		User one = User.builder().accessToken(user.getAccessToken()).id(user.getId()).username(user.getUsername())
 				.profileImage(user.getProfileImage()).provider("KAKAO").build();
 		User created = userRepository.save(one);
+		user.setNew(true);
 		return created;
 
 	}
