@@ -37,5 +37,6 @@ public class Study {
 	
 	private String description;
 	
-	private LocalDate targetDate;
+	private LocalDate openDate;
+	private LocalDate closeDate;
 }
