@@ -11,9 +11,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.studymate.domain.auth.dto.KakaoUser;
+import org.studymate.domain.auth.request.CreateTesterRequest;
 import org.studymate.domain.auth.request.KakaoLoginRequest;
-import org.studymate.domain.auth.request.SignInRequest;
-import org.studymate.domain.auth.request.SignUpRequest;
 import org.studymate.domain.auth.response.AuthResponse;
 import org.studymate.domain.user.UserService;
 import org.studymate.domain.user.entity.User;
@@ -34,23 +33,16 @@ public class AuthController {
 	private final UserService userService;
 	private final AuthService authService;
 
-	@PostMapping("/signin")
-	public ResponseEntity<?> handleAuthDevelop(@RequestBody SignInRequest signInRequest) {
-		log.debug("{}", signInRequest);
+	@PostMapping("/dev")
+	public ResponseEntity<?> handleAuthDevelop(@RequestBody CreateTesterRequest createTesterRequest) {
+		log.debug("{}", createTesterRequest);
 
-		User found = userService.getOneByUserId(signInRequest.getUserId());
+		User found = userService.addTestedOne(createTesterRequest);
 		String token = jwtProvider.createToken(found);
 
 		return new ResponseEntity<>(Map.of("token", token), HttpStatus.OK);
 	}
 
-	@PostMapping("/signup")
-	public ResponseEntity<?> handleAuthDevelop(@RequestBody SignUpRequest signUpRequest) {
-		log.debug("{}", signUpRequest);
-		User created = userService.addManagedOne(signUpRequest);
-
-		return new ResponseEntity<>(Map.of("created", created), HttpStatus.CREATED);
-	}
 
 	
 	@PostMapping("/kakao")

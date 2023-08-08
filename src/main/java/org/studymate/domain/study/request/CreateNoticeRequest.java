@@ -1,11 +1,9 @@
 package org.studymate.domain.study.request;
 
-import java.time.LocalDate;
-
 import lombok.Data;
 
 @Data
-public class CreateStudyRequest {
+public class CreateNoticeRequest {
 	private String description;
-	private LocalDate openDate;
+	private String tag;
 }

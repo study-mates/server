@@ -18,7 +18,6 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(name = "users")
 public class User {
 	@Id
 	private Long id;
