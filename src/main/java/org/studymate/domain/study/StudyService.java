@@ -36,7 +36,7 @@ public class StudyService {
 		User user = userRepository.findById(userId).orElseThrow(() -> new BadRequestException("존재하지 않는 유저입니다"));
 
 		Study one = Study.builder().user(user).description(createStudyRequest.getDescription())
-				.targetDate(createStudyRequest.getTargetDate()).build();
+				.openDate(createStudyRequest.getTargetDate()).build();
 
 		return studyRepository.save(one).getId();
 	}

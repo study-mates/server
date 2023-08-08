@@ -1,6 +1,7 @@
 package org.studymate.global;
 
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.studymate.global.filter.AuthenticationInterceptor;
@@ -21,5 +22,8 @@ public class InterceptorRegistration implements WebMvcConfigurer {
 				// 스터디 쪽
 				.addPathPatterns("/api/v1/study/**");
 	}
+	
+	
+	
 
 }
