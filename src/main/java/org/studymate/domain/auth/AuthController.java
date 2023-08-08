@@ -55,7 +55,6 @@ public class AuthController {
 	
 	@PostMapping("/kakao")
 	public ResponseEntity<?> handleKakaoAuthToken(@RequestBody KakaoLoginRequest loginRequest) {
-		
 		KakaoUser kakaoUser = authService.exchangeAccessTokenToKakaoUser(loginRequest.getAccessToken());
 
 		User user = userService.addKakaoAuthedOne(kakaoUser);
@@ -75,12 +74,8 @@ public class AuthController {
 	public ResponseEntity<?> handleKakaoAuthCallback(String code) {
 		log.debug("kakao code = {}", code);
 		String accessToken = authService.exchangeKakaoCodeToToken(code);
-		KakaoUser kakaoUser = authService.exchangeAccessTokenToKakaoUser(accessToken);
-
-		User user = userService.addKakaoAuthedOne(kakaoUser);
-		String token = jwtProvider.createToken(user);
-
-		return new ResponseEntity<>(AuthResponse.builder().token(token).user(kakaoUser).isNew(kakaoUser.isNew()).build(), HttpStatus.OK);
+		
+		return new ResponseEntity<>(Map.of("accessToken", accessToken), HttpStatus.OK);
 	}
 	
 	
