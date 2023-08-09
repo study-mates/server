@@ -26,7 +26,7 @@ public class GlobalExceptionHandler {
 		String error;
 		String message;
 		String path;
-
+ 
 	}
 
 	@ExceptionHandler(BadRequestException.class)
@@ -45,7 +45,7 @@ public class GlobalExceptionHandler {
 	}
 
 	@ExceptionHandler(NotFoundException.class)
-	public ResponseEntity<?> notFoundExceptionHandler(ForbiddenException e, HttpServletRequest request) {
+	public ResponseEntity<?> notFoundExceptionHandler(NotFoundException e, HttpServletRequest request) {
 		ErrorResponse response = new ErrorResponse(LocalDateTime.now(), 404, "Not found", e.getMessage(),
 				request.getRequestURI());
 		return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);

@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestAttribute;
@@ -21,6 +22,7 @@ import org.studymate.domain.study.dto.SimpleStudy;
 import org.studymate.domain.study.dto.SimpleTrace;
 import org.studymate.domain.study.request.CreateNoticeRequest;
 import org.studymate.domain.study.request.CreateStudyRequest;
+import org.studymate.domain.study.request.ModifyStudyReqesut;
 import org.studymate.domain.study.response.AttendanceListResponse;
 import org.studymate.domain.study.response.NoticeListResponse;
 import org.studymate.domain.study.response.StudyInfoResponse;
@@ -72,21 +74,22 @@ public class StudyController {
 	// 특정 스터디의 종합 정보 확인
 	@GetMapping("/{studyId}")
 	public ResponseEntity<?> handleInformationOfStudy(@RequestAttribute Long userId, @PathVariable String studyId) {
-		
+
 		userService.updateLastAccessStudy(userId, studyId);
-		
+
 		var study = studyService.getInfoAboutStudy(studyId);
 		var notice = studyService.getNoticeByStudyId(studyId);
 		var attendance = studyService.getAttendanceByStudyId(studyId);
 		var trace = studyService.getTraceByCreated(studyId, null);
 		var existTrace = studyService.getTraceDayInStudy(studyId);
-		var other = studyService.getStudyListByUser(userId).stream().map(t -> new SimpleStudy(t.getStudy())).filter(t->t.getEnabled()).toList();
-			other.forEach(t -> {
-				t.setOpenDate(null);
-				t.setStudyLeadUserId(null);
-				t.setRole(null);
-				t.setEnabled(null);
-			});
+		var other = studyService.getStudyListByUser(userId).stream().map(t -> new SimpleStudy(t.getStudy()))
+				.filter(t -> t.getEnabled()).toList();
+		other.forEach(t -> {
+			t.setOpenDate(null);
+			t.setStudyLeadUserId(null);
+			t.setRole(null);
+			t.setEnabled(null);
+		});
 		log.debug("existTrace {} ", existTrace);
 		var response = StudyInfoResponse.builder() //
 				.status("Ok") //
@@ -100,6 +103,22 @@ public class StudyController {
 				.traceDate(existTrace) //
 				.build();
 		return new ResponseEntity<>(response, HttpStatus.OK);
+	}
+
+	// 특정 스터디 종료
+	@DeleteMapping("/{studyId}")
+	public ResponseEntity<?> handleCreateStudy(@RequestAttribute Long userId, @PathVariable String studyId) {
+		var result = studyService.terminateStudy(userId, studyId);
+		userService.updateLastAccessStudy(userId, null);
+		return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+	}
+
+	// 특정 스터디 이름 변경
+	@PatchMapping("/{studyId}")
+	public ResponseEntity<?> handleModifyStudy(@RequestAttribute Long userId, @PathVariable String studyId,
+			@RequestBody ModifyStudyReqesut modifyStudyRequest) {
+		var result = studyService.updateStudyDescription(userId, studyId, modifyStudyRequest);
+		return new ResponseEntity<>(HttpStatus.NO_CONTENT);
 	}
 
 	// 특정 스터디에 참여

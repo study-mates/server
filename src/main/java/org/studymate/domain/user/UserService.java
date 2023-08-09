@@ -65,8 +65,12 @@ public class UserService {
 	@Transactional
 	public void updateLastAccessStudy(Long userId, String studyId) {
 		var foundUser = userRepository.findById(userId).orElseThrow(() ->  new NotFoundException("해당 유저를 찾을수 없습니다"));
-		var foundStudy = studyRepository.findById(studyId).orElseThrow(() ->  new NotFoundException("해당 스터디를 찾을수 없습니다")); 
-		foundUser.setLastAccessedStudy(foundStudy);
+		if(studyId != null) {
+			var foundStudy = studyRepository.findById(studyId).orElseThrow(() ->  new NotFoundException("해당 스터디를 찾을수 없습니다")); 
+			foundUser.setLastAccessedStudy(foundStudy);
+		}else {
+			foundUser.setLastAccessedStudy(null);
+		}
 		
 		userRepository.save(foundUser);
 	}

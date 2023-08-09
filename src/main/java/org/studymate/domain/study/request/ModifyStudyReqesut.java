@@ -3,6 +3,6 @@ package org.studymate.domain.study.request;
 import lombok.Data;
 
 @Data
-public class UpdateStudyRequest {
+public class ModifyStudyReqesut {
 	private String description;
 }

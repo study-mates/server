@@ -16,7 +16,7 @@ import org.studymate.domain.study.entity.Trace;
 import org.studymate.domain.study.entity.TraceRepository;
 import org.studymate.domain.study.request.CreateNoticeRequest;
 import org.studymate.domain.study.request.CreateStudyRequest;
-import org.studymate.domain.study.request.UpdateStudyRequest;
+import org.studymate.domain.study.request.ModifyStudyReqesut;
 import org.studymate.domain.user.entity.UserRepository;
 import org.studymate.global.constant.Messages;
 import org.studymate.global.exception.BadRequestException;
@@ -67,14 +67,14 @@ public class StudyService {
 
 	// 스터디 수정하는 서비스 (설명)
 	@Transactional
-	public String updateStudyDescription(Long userId, String studyId, UpdateStudyRequest updateStudyRequest) {
+	public String updateStudyDescription(Long userId, String studyId, ModifyStudyReqesut modifyStudyRequest) {
 		var user = userRepository.findById(userId).orElseThrow(() -> new NotFoundException(Messages.NOT_FOUND_USER));
 		var study = studyRepository.findById(studyId)
 				.orElseThrow(() -> new NotFoundException(Messages.NOT_FOUND_STUDY));
 		if (!study.getUser().getId().equals(user.getId()))
 			throw new ForbiddenException(Messages.PERMISSION_DENIED);
 
-		study.setDescription(updateStudyRequest.getDescription());
+		study.setDescription(modifyStudyRequest.getDescription());
 
 		return studyRepository.save(study).getId();
 	}
@@ -88,7 +88,10 @@ public class StudyService {
 
 		if (!study.getUser().getId().equals(user.getId()))
 			throw new ForbiddenException(Messages.PERMISSION_DENIED);
-
+		if(study.getClass() != null) {
+			throw new BadRequestException(Messages.ALREADY_CLOSED);
+		}
+		
 		study.setCloseDate(LocalDate.now());
 		return studyRepository.save(study).getId();
 	}
@@ -151,6 +154,9 @@ public class StudyService {
 				.orElseThrow(() -> new NotFoundException(Messages.NOT_FOUND_STUDY));
 		if (!attendanceRepository.existsByUserAndStudy(user, study)) {
 			throw new BadRequestException(Messages.NOT_ATTENDANCE);
+		}
+		if(study.getUser().getId().equals(userId)) {
+			throw new ForbiddenException(Messages.NOT_CONDITION);
 		}
 		attendanceRepository.deleteByUserAndStudy(user, study);
 		return;
