@@ -1,5 +1,7 @@
 package org.studymate.domain.study;
 
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.Map;
 
 import org.springframework.http.HttpStatus;
@@ -13,10 +15,15 @@ import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.studymate.domain.study.dto.SimpleAttendance;
+import org.studymate.domain.study.dto.SimpleNotice;
+import org.studymate.domain.study.dto.SimpleStudy;
+import org.studymate.domain.study.dto.SimpleTrace;
 import org.studymate.domain.study.request.CreateNoticeRequest;
 import org.studymate.domain.study.request.CreateStudyRequest;
 import org.studymate.domain.study.response.AttendanceListResponse;
 import org.studymate.domain.study.response.NoticeListResponse;
+import org.studymate.domain.study.response.StudyInfoResponse;
 import org.studymate.domain.study.response.StudyListResposne;
 import org.studymate.domain.user.UserService;
 
@@ -39,10 +46,13 @@ public class StudyController {
 		log.debug("userId {} ", userId);
 		var list = studyService.getStudyListByUser(userId);
 
+		var studyList = list.stream().map(t -> new SimpleStudy(t.getStudy())).toList();
+		studyList.stream().forEach(t -> t.setRole(userId.equals(t.getStudyLeadUserId()) ? "master" : "guest"));
+		
 		var response = StudyListResposne.builder() //
 				.status("Ok") //
 				.userId(userId) //
-				.study(list.stream().map(t -> new StudyListResposne.SimpleStudy(t, userId)).toList()) //
+				.study(studyList)//
 				.build();
 
 		return new ResponseEntity<>(response, HttpStatus.OK);
@@ -56,15 +66,29 @@ public class StudyController {
 		var studyId = studyService.addStudy(userId, createStudyRequest);
 		studyService.addAttendanceToStudy(userId, studyId);
 		userService.updateLastAccessStudy(userId, studyId);
-		return new ResponseEntity<>(Map.of("createdId", studyId), HttpStatus.CREATED);
+		return new ResponseEntity<>(Map.of("status","Created", "createdId", studyId), HttpStatus.CREATED);
 	}
 
 	// 특정 스터디의 종합 정보 확인
 	@GetMapping("/{studyId}")
 	public ResponseEntity<?> handleInformationOfStudy(@RequestAttribute Long userId, @PathVariable String studyId) {
-		var list = studyService.getAttendanceByStudyId(studyId);
-		log.debug("list size {}", list.size());
-		return new ResponseEntity<>(Map.of("status", "Ok", "attendance", list), HttpStatus.OK);
+		var study = studyService.getInfoAboutStudy(studyId);
+		var notice = studyService.getNoticeByStudyId(studyId);
+		var attendance = studyService.getAttendanceByStudyId(studyId);
+		var trace = studyService.getTraceByCreated(studyId, null);
+		var existTrace = studyService.getTraceDayInStudy(studyId);
+		log.debug("existTrace {} ", existTrace);
+		var response = StudyInfoResponse.builder() //
+				.status("Ok")	//
+				.study(new SimpleStudy(study)) //
+				.today(LocalDate.now()) //
+				.notice(notice.stream().map(SimpleNotice::new).toList()) //
+				.elapsed(ChronoUnit.DAYS.between(study.getOpenDate(), LocalDate.now())+1) //
+				.attendanceCount((long)attendance.size()) //
+				.todaysTrace(trace.stream().map(SimpleTrace::new).toList()) //
+				.traceDate(existTrace) //
+				.build();
+		return new ResponseEntity<>(response, HttpStatus.OK);
 	}
 
 	// 특정 스터디에 참여
@@ -83,22 +107,19 @@ public class StudyController {
 		var response = AttendanceListResponse.builder()//
 				.status("Ok") //
 				.studyId(studyId) //
-				.attendance(list.stream().map(AttendanceListResponse.SimpleAttendance::new).toList()) //
+				.attendance(list.stream().map(SimpleAttendance::new).toList()) //
 				.build();
 		return new ResponseEntity<>(response, HttpStatus.OK);
 	}
 
 	// 특정 스터디에 참가취소
 	@DeleteMapping("/{studyId}/attendance")
-	public ResponseEntity<?> handleCancleAttendanceOfStudy(@RequestAttribute Long userId, @PathVariable String studyId) {
+	public ResponseEntity<?> handleCancleAttendanceOfStudy(@RequestAttribute Long userId,
+			@PathVariable String studyId) {
 		studyService.removeAttendanceFromStudy(userId, studyId);
 //			log.debug("list size {}", list.size());
-		var response = AttendanceListResponse.builder()//
-				.status("Ok") //
-				.studyId(studyId) //
-				.attendance(list.stream().map(AttendanceListResponse.SimpleAttendance::new).toList()) //
-				.build();
-		return new ResponseEntity<>(response, HttpStatus.OK);
+
+		return new ResponseEntity<>(Map.of("status", "No content"), HttpStatus.NO_CONTENT);
 	}
 
 	// 특정 스터디에 공지 등록
@@ -118,7 +139,7 @@ public class StudyController {
 		var response = NoticeListResponse.builder()//
 				.status("Ok")//
 				.studyId(studyId)//
-				.notice(list.stream().map(NoticeListResponse.SimpleNotice::new).toList()) //
+				.notice(list.stream().map(SimpleNotice::new).toList()) //
 				.build();
 
 		return new ResponseEntity<>(response, HttpStatus.OK);

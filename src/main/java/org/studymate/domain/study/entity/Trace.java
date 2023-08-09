@@ -1,24 +1,22 @@
 package org.studymate.domain.study.entity;
 
 import java.time.LocalDate;
-import java.util.List;
 
 import org.studymate.domain.user.entity.User;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 
 @Entity
 @Setter
@@ -26,19 +24,27 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Study {
+@ToString
+public class Trace {
 	@Id
-	@GeneratedValue(strategy = GenerationType.UUID)
-	private String id;
-	
-	@JsonIgnore
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
+
 	@ManyToOne
-	private User user;
+	@JoinColumn
+	private User writer;
 	
+	@ManyToOne
+	@JoinColumn
+	private Study study;
+	
+	@Column
+	private String title;
+	
+	@Column
 	private String description;
 	
-	private LocalDate openDate;
-	private LocalDate closeDate;
-
-
+	@Column
+	private LocalDate created;
+	
 }

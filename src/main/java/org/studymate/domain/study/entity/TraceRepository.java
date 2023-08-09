@@ -1,0 +1,12 @@
+package org.studymate.domain.study.entity;
+
+import java.time.LocalDate;
+import java.util.List;
+
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface TraceRepository extends JpaRepository<Trace, Long>{
+	public List<Trace> findByStudyIdAndCreated(String studyId, LocalDate date );
+	public List<Trace> findByStudyId(String studyId, Sort sort);
+}
