@@ -1,14 +1,27 @@
 package org.studymate.domain.study;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.studymate.domain.study.entity.Attendance;
+import org.studymate.domain.study.entity.AttendanceRepository;
+import org.studymate.domain.study.entity.Notice;
+import org.studymate.domain.study.entity.NoticeRepository;
 import org.studymate.domain.study.entity.Study;
 import org.studymate.domain.study.entity.StudyRepository;
+import org.studymate.domain.study.entity.Trace;
+import org.studymate.domain.study.entity.TraceRepository;
+import org.studymate.domain.study.request.CreateNoticeRequest;
 import org.studymate.domain.study.request.CreateStudyRequest;
-import org.studymate.domain.user.entity.User;
+import org.studymate.domain.study.request.UpdateStudyRequest;
 import org.studymate.domain.user.entity.UserRepository;
+import org.studymate.global.constant.Messages;
 import org.studymate.global.exception.BadRequestException;
+import org.studymate.global.exception.ForbiddenException;
+import org.studymate.global.exception.NotFoundException;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -22,23 +35,142 @@ public class StudyService {
 	private final StudyRepository studyRepository;
 	private final UserRepository userRepository;
 
-	
-	public List<Study> getSpecificUsersStudy(Long userId) {
-		// TODO Auto-generated method stub
+	private final AttendanceRepository attendanceRepository;
+	private final NoticeRepository noticeRepository;
 
-		List<Study> list = studyRepository.findByUserId(userId);
+	private final TraceRepository traceRepository;
+
+	// 스터디 목록 확보하는 서비스
+	@Transactional
+	public List<Attendance> getStudyListByUser(Long userId) {
+		var list = attendanceRepository.findByUserId(userId);
 		log.debug("study list {}", list);
 		return list;
 	}
 
+	// 스터디 생성하는 서비스
 	@Transactional
-	public String addNewStudyToSpecificUser(Long userId, CreateStudyRequest createStudyRequest) {
-		User user = userRepository.findById(userId).orElseThrow(() -> new BadRequestException("존재하지 않는 유저입니다"));
+	public String addStudy(Long userId, CreateStudyRequest createStudyRequest) {
+		var user = userRepository.findById(userId).orElseThrow(() -> new NotFoundException(Messages.NOT_FOUND_USER));
+		var openDate = createStudyRequest.getOpenDate() == null ? LocalDate.now() : createStudyRequest.getOpenDate();
 
-		Study one = Study.builder().user(user).description(createStudyRequest.getDescription())
-				.openDate(createStudyRequest.getTargetDate()).build();
+		var one = Study.builder().user(user).description(createStudyRequest.getDescription())
+				.openDate(openDate == null ? LocalDate.now() : openDate).build();
 
 		return studyRepository.save(one).getId();
 	}
 
+	// 특정 스터디의 기본 정보 제공하는 서비스
+	public Study getInfoAboutStudy(String studyId) {
+		return studyRepository.findById(studyId).orElseThrow(() -> new NotFoundException(Messages.NOT_FOUND_STUDY));
+	}
+
+	// 스터디 수정하는 서비스 (설명)
+	@Transactional
+	public String updateStudyDescription(Long userId, String studyId, UpdateStudyRequest updateStudyRequest) {
+		var user = userRepository.findById(userId).orElseThrow(() -> new NotFoundException(Messages.NOT_FOUND_USER));
+		var study = studyRepository.findById(studyId)
+				.orElseThrow(() -> new NotFoundException(Messages.NOT_FOUND_STUDY));
+		if (!study.getUser().getId().equals(user.getId()))
+			throw new ForbiddenException(Messages.PERMISSION_DENIED);
+
+		study.setDescription(updateStudyRequest.getDescription());
+
+		return studyRepository.save(study).getId();
+	}
+
+	// 스터디 종료하는 서비스
+	@Transactional
+	public String terminateStudy(Long userId, String studyId) {
+		var user = userRepository.findById(userId).orElseThrow(() -> new NotFoundException(Messages.NOT_FOUND_USER));
+		var study = studyRepository.findById(studyId)
+				.orElseThrow(() -> new NotFoundException(Messages.NOT_FOUND_STUDY));
+
+		if (!study.getUser().getId().equals(user.getId()))
+			throw new ForbiddenException(Messages.PERMISSION_DENIED);
+
+		study.setCloseDate(LocalDate.now());
+		return studyRepository.save(study).getId();
+	}
+
+	// 스터디에 참가자 추가하는 서비스
+	@Transactional
+	public void addAttendanceToStudy(Long userId, String studyId) {
+		var user = userRepository.findById(userId).orElseThrow(() -> new NotFoundException(Messages.NOT_FOUND_USER));
+		var study = studyRepository.findById(studyId)
+				.orElseThrow(() -> new NotFoundException(Messages.NOT_FOUND_STUDY));
+
+		if (attendanceRepository.existsByUserAndStudy(user, study)) {
+			throw new BadRequestException(Messages.ALREADY_ATTENDANCE);
+		}
+
+		var owner = study.getUser().getId() == user.getId();
+		var attendance = Attendance.builder().study(study).user(user).owner(owner).build();
+
+		attendanceRepository.save(attendance);
+
+	}
+
+	// 특정 스터디의 참가자 확인하는 서비스
+	@Transactional
+	public List<Attendance> getAttendanceByStudyId(String studyId) {
+		log.debug("getAttendanceByStudyId {}", studyId);
+		return attendanceRepository.findByStudyId(studyId, Sort.by("owner").descending());
+	}
+
+	// 스터디에 공지 추가하는 서비스
+	@Transactional
+	public void addNoticeToStudy(Long userId, String studyId, CreateNoticeRequest createNoticeDto) {
+		var user = userRepository.findById(userId).orElseThrow(() -> new NotFoundException(Messages.NOT_FOUND_USER));
+		var study = studyRepository.findById(studyId)
+				.orElseThrow(() -> new NotFoundException(Messages.NOT_FOUND_STUDY));
+
+		if (study.getUser().getId() != user.getId()) {
+			throw new ForbiddenException(Messages.PERMISSION_DENIED);
+		}
+
+		var notice = Notice.builder().description(createNoticeDto.getDescription()).study(study)
+				.tag(createNoticeDto.getTag()).writed(LocalDateTime.now()).build();
+		log.debug("notice {}", notice);
+		noticeRepository.save(notice);
+	}
+
+	// 특정 스터디의 공지 목록 확인 하는 서비스
+	@Transactional
+	public List<Notice> getNoticeByStudyId(String studyId) {
+		var notice = noticeRepository.findByStudyId(studyId, Sort.by("writed").ascending());
+
+		return notice;
+	}
+
+	// 특정 스터디에서 참가 취소하는 서비스
+	@Transactional
+	public void removeAttendanceFromStudy(Long userId, String studyId) {
+		var user = userRepository.findById(userId).orElseThrow(() -> new NotFoundException(Messages.NOT_FOUND_USER));
+		var study = studyRepository.findById(studyId) 
+				.orElseThrow(() -> new NotFoundException(Messages.NOT_FOUND_STUDY));
+		if (!attendanceRepository.existsByUserAndStudy(user, study)) {
+			throw new BadRequestException(Messages.NOT_ATTENDANCE);
+		}
+		attendanceRepository.deleteByUserAndStudy(user, study);
+		return;
+	}
+
+	// 특정 스터디에 인증글이 달린 날짜 확인하는 서비스
+	@Transactional
+	public List<LocalDate> getTraceDayInStudy(String studyId) {
+		var r =  traceRepository.findByStudyId(studyId, Sort.by("created").ascending());
+		// log.debug("{}", r);
+		return r.stream().map(t->t.getCreated()).distinct().toList();
+	}
+	
+	// 특정 스터디의 특정일의 인증글 가져오기 서비스
+	@Transactional
+	public List<Trace> getTraceByCreated(String studyId, LocalDate date) {
+		if (date == null)
+			date = LocalDate.now();
+		return traceRepository.findByStudyIdAndCreated(studyId, date);
+	}
+
+	
 }
