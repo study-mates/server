@@ -9,12 +9,13 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 
 @Data
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class SimpleStudy {
 	private String studyId;
-	private boolean enabled;
+	private Boolean enabled;
 	private Long studyLeadUserId;
 	private String description;
-	@JsonInclude(JsonInclude.Include.NON_NULL)
+	
 	private String role;
 	private LocalDate openDate;
 

@@ -48,7 +48,7 @@ public class StudyController {
 
 		var studyList = list.stream().map(t -> new SimpleStudy(t.getStudy())).toList();
 		studyList.stream().forEach(t -> t.setRole(userId.equals(t.getStudyLeadUserId()) ? "master" : "guest"));
-		
+
 		var response = StudyListResposne.builder() //
 				.status("Ok") //
 				.userId(userId) //
@@ -66,26 +66,37 @@ public class StudyController {
 		var studyId = studyService.addStudy(userId, createStudyRequest);
 		studyService.addAttendanceToStudy(userId, studyId);
 		userService.updateLastAccessStudy(userId, studyId);
-		return new ResponseEntity<>(Map.of("status","Created", "createdId", studyId), HttpStatus.CREATED);
+		return new ResponseEntity<>(Map.of("status", "Created", "createdId", studyId), HttpStatus.CREATED);
 	}
 
 	// 특정 스터디의 종합 정보 확인
 	@GetMapping("/{studyId}")
 	public ResponseEntity<?> handleInformationOfStudy(@RequestAttribute Long userId, @PathVariable String studyId) {
+		
+		userService.updateLastAccessStudy(userId, studyId);
+		
 		var study = studyService.getInfoAboutStudy(studyId);
 		var notice = studyService.getNoticeByStudyId(studyId);
 		var attendance = studyService.getAttendanceByStudyId(studyId);
 		var trace = studyService.getTraceByCreated(studyId, null);
 		var existTrace = studyService.getTraceDayInStudy(studyId);
+		var other = studyService.getStudyListByUser(userId).stream().map(t -> new SimpleStudy(t.getStudy())).filter(t->t.getEnabled()).toList();
+			other.forEach(t -> {
+				t.setOpenDate(null);
+				t.setStudyLeadUserId(null);
+				t.setRole(null);
+				t.setEnabled(null);
+			});
 		log.debug("existTrace {} ", existTrace);
 		var response = StudyInfoResponse.builder() //
-				.status("Ok")	//
+				.status("Ok") //
 				.study(new SimpleStudy(study)) //
 				.today(LocalDate.now()) //
 				.notice(notice.stream().map(SimpleNotice::new).toList()) //
-				.elapsed(ChronoUnit.DAYS.between(study.getOpenDate(), LocalDate.now())+1) //
-				.attendanceCount((long)attendance.size()) //
+				.elapsed(ChronoUnit.DAYS.between(study.getOpenDate(), LocalDate.now()) + 1) //
+				.attendanceCount((long) attendance.size()) //
 				.todaysTrace(trace.stream().map(SimpleTrace::new).toList()) //
+				.studyList(other) //
 				.traceDate(existTrace) //
 				.build();
 		return new ResponseEntity<>(response, HttpStatus.OK);
