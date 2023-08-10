@@ -196,7 +196,7 @@ public class StudyService {
 
 	// 특정 스터디에 인증글 등록하기 서비스
 	@Transactional
-	public void addTraceToStudy(Long userId, String studyId, AddTraceRequest req) {
+	public Trace addTraceToStudy(Long userId, String studyId, AddTraceRequest req) {
 		var user = userRepository.findById(userId).orElseThrow(() -> new NotFoundException(Messages.NOT_FOUND_USER));
 		var study = studyRepository.findById(studyId)
 				.orElseThrow(() -> new NotFoundException(Messages.NOT_FOUND_STUDY));
@@ -212,7 +212,7 @@ public class StudyService {
 				.build();
 		var savedTrace = traceRepository.save(trace);
 		if (req.getImages() == null || req.getImages().isEmpty()) {
-			return;
+			return savedTrace;
 		}
 
 		String path = "/static/" + studyId + "/" + LocalDate.now().toString().replace("-", "");
@@ -221,6 +221,7 @@ public class StudyService {
 			var image = Image.builder().trace(savedTrace).url(path + "/" + filename).build();
 			imageRepository.save(image);
 		});
+		return savedTrace;
 	}
 	
 	// 특정 인증글 상세 가져 오기
