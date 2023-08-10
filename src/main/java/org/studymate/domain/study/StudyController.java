@@ -223,6 +223,8 @@ public class StudyController {
 //		var list = studyService.getTraceByCreated(studyId, date, page);
 		var entity =studyService.getTraceById(traceId);
 		var trace = new SimpleTrace(entity);
+		trace.setMainImage(deployServername+trace.getMainImage());
+		trace.setImages(trace.getImages().stream().map(t-> deployServername+t).toList());
 		
 		return new ResponseEntity<>(Map.of("status","Ok", "trace" , trace) , HttpStatus.OK);
 	}
