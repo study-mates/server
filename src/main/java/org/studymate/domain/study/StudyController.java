@@ -195,9 +195,9 @@ public class StudyController {
 	@PostMapping("/{studyId}/trace")
 	public ResponseEntity<?> handleCreateTrace(@RequestAttribute Long userId, @PathVariable String studyId,
 			AddTraceRequest req) {
-		studyService.addTraceToStudy(userId, studyId, req);
+		var entity = studyService.addTraceToStudy(userId, studyId, req);
 
-		return new ResponseEntity<>(Map.of("status", "Created"), HttpStatus.CREATED);
+		return new ResponseEntity<>(Map.of("status", "Created", "traceId", entity.getId()), HttpStatus.CREATED);
 	}
 
 	// 특정 스터디의 인증글 목록 가져오기
