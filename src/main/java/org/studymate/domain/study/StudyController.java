@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -15,11 +16,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.studymate.domain.study.dto.SimpleAttendance;
 import org.studymate.domain.study.dto.SimpleNotice;
 import org.studymate.domain.study.dto.SimpleStudy;
 import org.studymate.domain.study.dto.SimpleTrace;
+import org.studymate.domain.study.request.AddTraceRequest;
 import org.studymate.domain.study.request.CreateNoticeRequest;
 import org.studymate.domain.study.request.CreateStudyRequest;
 import org.studymate.domain.study.request.ModifyStudyReqesut;
@@ -27,6 +30,7 @@ import org.studymate.domain.study.response.AttendanceListResponse;
 import org.studymate.domain.study.response.NoticeListResponse;
 import org.studymate.domain.study.response.StudyInfoResponse;
 import org.studymate.domain.study.response.StudyListResposne;
+import org.studymate.domain.study.response.TraceListResponse;
 import org.studymate.domain.user.UserService;
 
 import lombok.RequiredArgsConstructor;
@@ -42,6 +46,11 @@ public class StudyController {
 	private final StudyService studyService;
 	private final UserService userService;
 
+	
+	@Value("${deploy.servername}")
+	private String deployServername;
+	
+	
 	// 스터디 목록 확인
 	@GetMapping
 	public ResponseEntity<?> handleStudyList(@RequestAttribute Long userId) {
@@ -80,7 +89,14 @@ public class StudyController {
 		var study = studyService.getInfoAboutStudy(studyId);
 		var notice = studyService.getNoticeByStudyId(studyId);
 		var attendance = studyService.getAttendanceByStudyId(studyId);
-		var trace = studyService.getTraceByCreated(studyId, null);
+		var trace = studyService.getTraceByCreated(studyId, null, null).stream().map(SimpleTrace::new).toList();
+		trace.forEach(t->{ 
+			t.setDescription(null);
+			t.setImages(null);
+			t.setMainImage(deployServername+t.getMainImage());
+		});
+		
+		
 		var existTrace = studyService.getTraceDayInStudy(studyId);
 		var other = studyService.getStudyListByUser(userId).stream().map(t -> new SimpleStudy(t.getStudy()))
 				.filter(t -> t.getEnabled()).toList();
@@ -98,7 +114,7 @@ public class StudyController {
 				.notice(notice.stream().map(SimpleNotice::new).toList()) //
 				.elapsed(ChronoUnit.DAYS.between(study.getOpenDate(), LocalDate.now()) + 1) //
 				.attendanceCount((long) attendance.size()) //
-				.todaysTrace(trace.stream().map(SimpleTrace::new).toList()) //
+				.todaysTrace(trace) //
 				.studyList(other) //
 				.traceDate(existTrace) //
 				.build();
@@ -175,4 +191,39 @@ public class StudyController {
 		return new ResponseEntity<>(response, HttpStatus.OK);
 	}
 
+	// 특정 스터디에 인증글 등록하기
+	@PostMapping("/{studyId}/trace")
+	public ResponseEntity<?> handleCreateTrace(@RequestAttribute Long userId, @PathVariable String studyId,
+			AddTraceRequest req) {
+		studyService.addTraceToStudy(userId, studyId, req);
+
+		return new ResponseEntity<>(Map.of("status", "Created"), HttpStatus.CREATED);
+	}
+
+	// 특정 스터디의 인증글 목록 가져오기
+	@GetMapping("/{studyId}/trace")
+	public ResponseEntity<?> handleGetTrace(@PathVariable String studyId, @RequestParam(required = false) Integer page,
+			@RequestParam(required = false) LocalDate date) {
+		var entitylist = studyService.getTraceByCreated(studyId, date, page);
+		var list = entitylist.stream().map(SimpleTrace::new).toList();
+		list.forEach(t -> {
+			t.setImages(null);
+			t.setDescription(null);
+			t.setMainImage(deployServername+t.getMainImage());
+		});
+
+		var response = TraceListResponse.builder().status("Ok").studyId(studyId)
+				.date(date == null ? LocalDate.now() : date).page(page == null ? 1 : page).trace(list).build();
+		return new ResponseEntity<>(response, HttpStatus.CREATED);
+	}
+
+	// 특정 스터디의 인증글 상세
+	@GetMapping("/{studyId}/trace/{traceId}")
+	public ResponseEntity<?> handleGetTraceDetail(@PathVariable String studyId, @PathVariable Long traceId) {
+//		var list = studyService.getTraceByCreated(studyId, date, page);
+		var entity =studyService.getTraceById(traceId);
+		var trace = new SimpleTrace(entity);
+		
+		return new ResponseEntity<>(Map.of("status","Ok", "trace" , trace) , HttpStatus.OK);
+	}
 }

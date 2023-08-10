@@ -1,6 +1,7 @@
 package org.studymate.domain.study.entity;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import org.studymate.domain.user.entity.User;
 
@@ -11,6 +12,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -46,5 +48,9 @@ public class Trace {
 	
 	@Column
 	private LocalDate created;
+
 	
+	@OneToMany
+	@JoinColumn(name="trace_id")
+	private List<Image> images;
 }
