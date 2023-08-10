@@ -4,16 +4,22 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.studymate.domain.study.entity.Attendance;
 import org.studymate.domain.study.entity.AttendanceRepository;
+import org.studymate.domain.study.entity.Image;
+import org.studymate.domain.study.entity.ImageRepository;
 import org.studymate.domain.study.entity.Notice;
 import org.studymate.domain.study.entity.NoticeRepository;
 import org.studymate.domain.study.entity.Study;
 import org.studymate.domain.study.entity.StudyRepository;
 import org.studymate.domain.study.entity.Trace;
 import org.studymate.domain.study.entity.TraceRepository;
+import org.studymate.domain.study.request.AddTraceRequest;
 import org.studymate.domain.study.request.CreateNoticeRequest;
 import org.studymate.domain.study.request.CreateStudyRequest;
 import org.studymate.domain.study.request.ModifyStudyReqesut;
@@ -22,6 +28,7 @@ import org.studymate.global.constant.Messages;
 import org.studymate.global.exception.BadRequestException;
 import org.studymate.global.exception.ForbiddenException;
 import org.studymate.global.exception.NotFoundException;
+import org.studymate.global.util.FileHandler;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -39,7 +46,14 @@ public class StudyService {
 	private final NoticeRepository noticeRepository;
 
 	private final TraceRepository traceRepository;
+	private final ImageRepository imageRepository;
 
+	private final FileHandler fileHandler;
+
+
+	
+	
+	
 	// 스터디 목록 확보하는 서비스
 	@Transactional
 	public List<Attendance> getStudyListByUser(Long userId) {
@@ -88,10 +102,10 @@ public class StudyService {
 
 		if (!study.getUser().getId().equals(user.getId()))
 			throw new ForbiddenException(Messages.PERMISSION_DENIED);
-		if(study.getClass() != null) {
+		if (study.getClass() != null) {
 			throw new BadRequestException(Messages.ALREADY_CLOSED);
 		}
-		
+
 		study.setCloseDate(LocalDate.now());
 		return studyRepository.save(study).getId();
 	}
@@ -150,12 +164,12 @@ public class StudyService {
 	@Transactional
 	public void removeAttendanceFromStudy(Long userId, String studyId) {
 		var user = userRepository.findById(userId).orElseThrow(() -> new NotFoundException(Messages.NOT_FOUND_USER));
-		var study = studyRepository.findById(studyId) 
+		var study = studyRepository.findById(studyId)
 				.orElseThrow(() -> new NotFoundException(Messages.NOT_FOUND_STUDY));
 		if (!attendanceRepository.existsByUserAndStudy(user, study)) {
 			throw new BadRequestException(Messages.NOT_ATTENDANCE);
 		}
-		if(study.getUser().getId().equals(userId)) {
+		if (study.getUser().getId().equals(userId)) {
 			throw new ForbiddenException(Messages.NOT_CONDITION);
 		}
 		attendanceRepository.deleteByUserAndStudy(user, study);
@@ -165,18 +179,59 @@ public class StudyService {
 	// 특정 스터디에 인증글이 달린 날짜 확인하는 서비스
 	@Transactional
 	public List<LocalDate> getTraceDayInStudy(String studyId) {
-		var r =  traceRepository.findByStudyId(studyId, Sort.by("created").ascending());
+		var r = traceRepository.findByStudyId(studyId, Sort.by("created").ascending());
 		// log.debug("{}", r);
-		return r.stream().map(t->t.getCreated()).distinct().toList();
-	}
-	
-	// 특정 스터디의 특정일의 인증글 가져오기 서비스
-	@Transactional
-	public List<Trace> getTraceByCreated(String studyId, LocalDate date) {
-		if (date == null)
-			date = LocalDate.now();
-		return traceRepository.findByStudyIdAndCreated(studyId, date);
+		return r.stream().map(t -> t.getCreated()).distinct().toList();
 	}
 
+	// 특정 스터디의 특정일의 인증글 가져오기 서비스
+	@Transactional
+	public List<Trace> getTraceByCreated(String studyId, LocalDate date, Integer p) {
+		if (date == null)
+			date = LocalDate.now();
+		int page = p == null ? 0 : p - 1;
+		Pageable pageable = PageRequest.of(page, 10, Sort.by("id").ascending());
+		return traceRepository.findByStudyIdAndCreated(studyId, date, pageable);
+	}
+
+	// 특정 스터디에 인증글 등록하기 서비스
+	@Transactional
+	public void addTraceToStudy(Long userId, String studyId, AddTraceRequest req) {
+		var user = userRepository.findById(userId).orElseThrow(() -> new NotFoundException(Messages.NOT_FOUND_USER));
+		var study = studyRepository.findById(studyId)
+				.orElseThrow(() -> new NotFoundException(Messages.NOT_FOUND_STUDY));
+		if (!attendanceRepository.existsByUserAndStudy(user, study)) {
+			throw new BadRequestException(Messages.NOT_ATTENDANCE);
+		}
+		var trace = Trace.builder()//
+				.writer(user)//
+				.study(study) //
+				.title(req.getTitle()) //
+				.description(req.getDescription()) //
+				.created(LocalDate.now()) //
+				.build();
+		var savedTrace = traceRepository.save(trace);
+		if (req.getImages() == null || req.getImages().isEmpty()) {
+			return;
+		}
+
+		String path = "/static/" + studyId + "/" + LocalDate.now().toString().replace("-", "");
+		req.getImages().forEach(t -> {
+			String filename = fileHandler.save(t, path);
+			var image = Image.builder().trace(savedTrace).url(path + "/" + filename).build();
+			imageRepository.save(image);
+		});
+	}
+	
+	// 특정 인증글 상세 가져 오기
+	@Transactional
+	public Trace getTraceById(Long traceId) {
+		return traceRepository.findById(traceId).orElseThrow(() -> new NotFoundException(Messages.NOT_FOUND_TRACE));
+	}
+	
+	
+	
+	
+	
 	
 }

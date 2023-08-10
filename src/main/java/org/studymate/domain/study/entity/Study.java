@@ -2,6 +2,7 @@ package org.studymate.domain.study.entity;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.UUID;
 
 import org.studymate.domain.user.entity.User;
 
@@ -14,6 +15,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.PrePersist;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -28,7 +30,6 @@ import lombok.Setter;
 @Builder
 public class Study {
 	@Id
-	@GeneratedValue(strategy = GenerationType.UUID)
 	private String id;
 	
 	@JsonIgnore
@@ -41,4 +42,8 @@ public class Study {
 	private LocalDate closeDate;
 
 
+	@PrePersist
+	public void prePresist() {
+		this.id = UUID.randomUUID().toString().split("-")[4];
+	}
 }
