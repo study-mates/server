@@ -36,10 +36,10 @@ import org.studymate.domain.user.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-@CrossOrigin
 @RestController
 @RequestMapping("/api/v1/study")
 @RequiredArgsConstructor
+@CrossOrigin("*")
 @Slf4j
 public class StudyController {
 
