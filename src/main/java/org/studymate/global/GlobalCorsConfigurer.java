@@ -1,6 +1,8 @@
 package org.studymate.global;
 
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
@@ -12,13 +14,15 @@ import lombok.RequiredArgsConstructor;
 
 @Configuration
 @RequiredArgsConstructor
+
+@Order(Ordered.HIGHEST_PRECEDENCE)
 public class GlobalCorsConfigurer implements WebMvcConfigurer {
 
 
 	@Override
 	public void addCorsMappings(CorsRegistry registry) {
-		registry.addMapping("/**").allowedOrigins("*").allowedMethods("GET", "POST", "UPDATE", "DELETE", "PUT")
-				.allowedHeaders("Authorization", "Content-Type").allowCredentials(false).maxAge(3600);
+		registry.addMapping("/**").allowedOrigins("*").allowedMethods("*")
+				.allowedHeaders("*").maxAge(3600);
 	}
  
 

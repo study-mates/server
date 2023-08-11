@@ -21,6 +21,11 @@ public class AuthenticationInterceptor implements HandlerInterceptor {
 	@Override
 	public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
 			throws Exception {
+		log.debug("prehandle {}",  request.getMethod());
+		if (request.getMethod().equals("OPTIONS")) {
+			return true;
+		}
+
 		String authorizationHeader = request.getHeader("Authorization");
 		log.debug("token {}", authorizationHeader);
 		if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
@@ -35,7 +40,7 @@ public class AuthenticationInterceptor implements HandlerInterceptor {
 			response.sendError(400, "유효하지 않은 토큰입니다.");
 			return false;
 		}
-		
+
 		request.setAttribute("userId", subject);
 		return true;
 	}
