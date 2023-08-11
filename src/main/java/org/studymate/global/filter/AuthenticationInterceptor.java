@@ -1,5 +1,6 @@
 package org.studymate.global.filter;
 
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.studymate.global.exception.BadRequestException;
 import org.studymate.global.exception.UnauthorizedException;
@@ -8,8 +9,11 @@ import org.studymate.global.util.JwtProvieder;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @RequiredArgsConstructor
+@CrossOrigin("*")
+@Slf4j
 public class AuthenticationInterceptor implements HandlerInterceptor {
 
 	private final JwtProvieder jwtProvieder;
@@ -18,7 +22,7 @@ public class AuthenticationInterceptor implements HandlerInterceptor {
 	public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
 			throws Exception {
 		String authorizationHeader = request.getHeader("Authorization");
-
+		log.debug("token {}", authorizationHeader);
 		if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
 			System.out.println("??????===================");
 			response.sendError(400, "Bearer 형식의 토큰이 아닙니다.");
