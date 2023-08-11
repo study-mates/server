@@ -91,7 +91,8 @@ public class StudyController {
 		trace.forEach(t -> {
 			t.setDescription(null);
 			t.setImages(null);
-			t.setMainImage(deployServername + t.getMainImage());
+			if(t.getMainImage() != null)
+				t.setMainImage(deployServername + t.getMainImage());
 		});
 
 		var existTrace = studyService.getTraceDayInStudy(studyId);
@@ -198,7 +199,8 @@ public class StudyController {
 		list.forEach(t -> {
 			t.setImages(null);
 			t.setDescription(null);
-			t.setMainImage(deployServername + t.getMainImage());
+			if(t.getMainImage() != null)
+				t.setMainImage(deployServername + t.getMainImage());
 		});
 
 		var response = TraceListResponse.builder().status("Ok").studyId(studyId)
@@ -212,6 +214,7 @@ public class StudyController {
 //		var list = studyService.getTraceByCreated(studyId, date, page);
 		var entity = studyService.getTraceById(traceId);
 		var trace = new SimpleTrace(entity);
+		if(trace.getMainImage()!= null)
 		trace.setMainImage(deployServername + trace.getMainImage());
 		trace.setImages(trace.getImages().stream().map(t -> deployServername + t).toList());
 
