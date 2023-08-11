@@ -2,13 +2,16 @@ package org.studymate.domain.study;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Base64;
 import java.util.List;
+import java.util.UUID;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.studymate.domain.invite.entity.Invite;
+import org.studymate.domain.invite.entity.InviteRepository;
 import org.studymate.domain.study.entity.Attendance;
 import org.studymate.domain.study.entity.AttendanceRepository;
 import org.studymate.domain.study.entity.Image;
@@ -48,6 +51,8 @@ public class StudyService {
 	private final TraceRepository traceRepository;
 	private final ImageRepository imageRepository;
 
+	private final InviteRepository inviteRepository;
+	
 	private final FileHandler fileHandler;
 
 
@@ -231,8 +236,47 @@ public class StudyService {
 	}
 	
 	
+	// 특정 스터디의 초대 코드 생성하기
+	public Invite createInviteCode(String studyId) {
+		var study = studyRepository.findById(studyId).orElseThrow(() -> new NotFoundException(Messages.NOT_FOUND_STUDY));
+		if(study.getCloseDate() != null) {
+			throw new BadRequestException(Messages.ALREADY_CLOSED);
+		}
+		
+		if(inviteRepository.findByStudyId(studyId).isPresent()) {
+			return inviteRepository.findByStudyId(studyId).get();
+		}
+		
+		var originalCode = UUID.randomUUID().toString().substring(0, 6);
+		var code =Base64.getEncoder().encodeToString(originalCode.getBytes());
+		var invite = Invite.builder().code(code).study(study).expired(LocalDateTime.now().plusDays(3)).build();
+		
+		return inviteRepository.save(invite);
+	}
 	
-	
-	
+	// 특정 초대 코드로 스터디 참가 시키기
+	public Study attendToStudyByInviteCode(Long userId, String inviteCode) {
+		log.debug("invite code {}", inviteCode);
+		var savedEntity = inviteRepository.findByCode(inviteCode).orElseThrow(() -> new NotFoundException(Messages.NOT_FOUND_CODE));
+		var now = LocalDateTime.now();
+		if(now.isAfter(savedEntity.getExpired())) {
+			throw new BadRequestException(Messages.EXPIRED_CDDE);
+		}
+		if(savedEntity.getStudy().getCloseDate() != null) {
+			throw new BadRequestException(Messages.ALREADY_CLOSED);
+		}
+		
+		var user = userRepository.findById(userId).orElseThrow(() -> new NotFoundException(Messages.NOT_FOUND_USER));
+		
+
+		if (attendanceRepository.existsByUserAndStudy(user, savedEntity.getStudy())) {
+			throw new BadRequestException(Messages.ALREADY_ATTENDANCE);
+		}
+
+		var attendance = Attendance.builder().study(savedEntity.getStudy()).user(user).owner(false).build();
+
+		attendanceRepository.save(attendance);
+		return savedEntity.getStudy();
+	}
 	
 }

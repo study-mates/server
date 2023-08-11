@@ -46,11 +46,9 @@ public class StudyController {
 	private final StudyService studyService;
 	private final UserService userService;
 
-	
 	@Value("${deploy.servername}")
 	private String deployServername;
-	
-	
+
 	// 스터디 목록 확인
 	@GetMapping
 	public ResponseEntity<?> handleStudyList(@RequestAttribute Long userId) {
@@ -90,13 +88,12 @@ public class StudyController {
 		var notice = studyService.getNoticeByStudyId(studyId);
 		var attendance = studyService.getAttendanceByStudyId(studyId);
 		var trace = studyService.getTraceByCreated(studyId, null, null).stream().map(SimpleTrace::new).toList();
-		trace.forEach(t->{ 
+		trace.forEach(t -> {
 			t.setDescription(null);
 			t.setImages(null);
-			t.setMainImage(deployServername+t.getMainImage());
+			t.setMainImage(deployServername + t.getMainImage());
 		});
-		
-		
+
 		var existTrace = studyService.getTraceDayInStudy(studyId);
 		var other = studyService.getStudyListByUser(userId).stream().map(t -> new SimpleStudy(t.getStudy()))
 				.filter(t -> t.getEnabled()).toList();
@@ -135,14 +132,6 @@ public class StudyController {
 			@RequestBody ModifyStudyReqesut modifyStudyRequest) {
 		var result = studyService.updateStudyDescription(userId, studyId, modifyStudyRequest);
 		return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-	}
-
-	// 특정 스터디에 참여
-	@PostMapping("/{studyId}/attendance")
-	public ResponseEntity<?> handleAttendToStudy(@RequestAttribute Long userId, @PathVariable String studyId) {
-		studyService.addAttendanceToStudy(userId, studyId);
-
-		return new ResponseEntity<>(Map.of("status", "Created"), HttpStatus.CREATED);
 	}
 
 	// 특정 스터디의 참가자 확인
@@ -209,7 +198,7 @@ public class StudyController {
 		list.forEach(t -> {
 			t.setImages(null);
 			t.setDescription(null);
-			t.setMainImage(deployServername+t.getMainImage());
+			t.setMainImage(deployServername + t.getMainImage());
 		});
 
 		var response = TraceListResponse.builder().status("Ok").studyId(studyId)
@@ -221,11 +210,23 @@ public class StudyController {
 	@GetMapping("/{studyId}/trace/{traceId}")
 	public ResponseEntity<?> handleGetTraceDetail(@PathVariable String studyId, @PathVariable Long traceId) {
 //		var list = studyService.getTraceByCreated(studyId, date, page);
-		var entity =studyService.getTraceById(traceId);
+		var entity = studyService.getTraceById(traceId);
 		var trace = new SimpleTrace(entity);
-		trace.setMainImage(deployServername+trace.getMainImage());
-		trace.setImages(trace.getImages().stream().map(t-> deployServername+t).toList());
-		
-		return new ResponseEntity<>(Map.of("status","Ok", "trace" , trace) , HttpStatus.OK);
+		trace.setMainImage(deployServername + trace.getMainImage());
+		trace.setImages(trace.getImages().stream().map(t -> deployServername + t).toList());
+
+		return new ResponseEntity<>(Map.of("status", "Ok", "trace", trace), HttpStatus.OK);
 	}
+
+	// 특정 스터디의 초대 코드 생성하기
+
+	@GetMapping("/{studyId}/invite")
+	public ResponseEntity<?> handleCreateInvite(@PathVariable String studyId) {
+
+		var entity = studyService.createInviteCode(studyId);
+
+		return new ResponseEntity<>(Map.of("status", "Ok", "code", entity.getCode()), HttpStatus.OK);
+	}
+
+
 }
