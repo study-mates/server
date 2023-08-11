@@ -12,10 +12,8 @@ import lombok.RequiredArgsConstructor;
 
 @Configuration
 @RequiredArgsConstructor
-@CrossOrigin("*")
-public class GlobalWebConfigurer implements WebMvcConfigurer {
+public class GlobalCorsConfigurer implements WebMvcConfigurer {
 
-	private final JwtProvieder jwtProvieder;
 
 	@Override
 	public void addCorsMappings(CorsRegistry registry) {
@@ -23,12 +21,5 @@ public class GlobalWebConfigurer implements WebMvcConfigurer {
 				.allowedHeaders("Authorization", "Content-Type").allowCredentials(false).maxAge(3600);
 	}
  
-	@Override
-	public void addInterceptors(InterceptorRegistry registry) {
-		// JWT 토큰 검증을 적용할 URL 패턴 지정
-		registry.addInterceptor(new AuthenticationInterceptor(jwtProvieder))
-				// 스터디 쪽
-				.addPathPatterns("/api/v1/study/**");
-	}
 
 }
